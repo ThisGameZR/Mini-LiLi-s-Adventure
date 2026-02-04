@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { GameMode, Mood } from '../types';
-import { generateRandomChat } from '../services/geminiService';
+import { generateRandomChat } from '../services/chatService';
 
 interface UseRandomChatProps {
   mode: GameMode;

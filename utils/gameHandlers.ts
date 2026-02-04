@@ -1,6 +1,6 @@
 import { Item, ItemId, Mood } from '../types';
 import { POKE_TEXTS } from '../config/gameConfig';
-import { generateGooseWisdom } from '../services/geminiService';
+import { generateGooseWisdom } from '../services/chatService';
 import { createClickEffect, ClickEffect } from './clickEffects';
 
 export const handlePoke = (
