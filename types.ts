@@ -1,37 +1,53 @@
-export enum Scene {
-  MENU = 'MENU',
-  HUB = 'HUB',
-  GAME_CATCH = 'GAME_CATCH',
-  GAME_MAZE = 'GAME_MAZE',
-  GAME_DUCK_KINGDOM = 'GAME_DUCK_KINGDOM',
+
+export enum GameMode {
+  HOME = 'HOME',
+  ADVENTURE = 'ADVENTURE',
+  SHOP = 'SHOP',
 }
 
-export interface LevelStats {
-  unlocked: boolean;
-  highScore: number;
-  stars: number; // 0-3
+export enum Mood {
+  HAPPY = 'HAPPY',
+  SLEEPY = 'SLEEPY',
+  MAD = 'MAD', // Red Mode
+  SMART = 'SMART', // Reading
+  DANCING = 'DANCING'
 }
 
-export interface PlayerProgress {
-  tutorial: boolean;
-  currency: number; // BreadCrumbs
-  levels: {
-    [key in Scene]?: LevelStats;
+export interface Stats {
+  tummy: number; // 0-100
+  joy: number;   // 0-100
+  energy: number;// 0-100
+}
+
+export enum ItemId {
+  LASAGNA = 'lasagna',
+  POPCORN = 'popcorn',
+  RED_BOW = 'red_bow',
+  COOL_GLASSES = 'cool_glasses',
+  SANTA_SUIT = 'santa_suit',
+  RED_CAPE = 'red_cape',
+}
+
+export interface Item {
+  id: ItemId;
+  name: string;
+  type: 'FOOD' | 'COSMETIC' | 'UPGRADE';
+  cost: number;
+  description: string;
+  owned: boolean;
+  icon: string;
+  effect?: (stats: Stats) => Partial<Stats>;
+}
+
+export interface GameState {
+  popcorn: number; // Currency
+  inventory: Record<string, number>; // ItemId -> Count
+  unlockedItems: string[]; // List of ItemIds
+  stats: Stats;
+  hasPoop: boolean;
+  equipped: {
+    hat?: ItemId;
+    glasses?: ItemId;
+    accessory?: ItemId;
   };
-}
-
-export interface GameContextProps {
-  progress: PlayerProgress;
-  currentScene: Scene;
-  unlockLevel: (scene: Scene, score: number, stars: number) => void;
-  changeScene: (scene: Scene) => void;
-  playSfx: (type: 'honk' | 'step' | 'win' | 'fail') => void;
-}
-
-export interface CursorState {
-  x: number;
-  y: number;
-  isClicking: boolean;
-  isMoving: boolean;
-  direction: 'left' | 'right';
 }

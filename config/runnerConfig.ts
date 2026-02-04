@@ -1,0 +1,11 @@
+export const GRAVITY = 0.4;
+export const JUMP_FORCE = -10;
+export const GLIDE_FORCE = -0.15;
+export const INITIAL_SPEED = 3.5;
+export const MAX_SPEED = 8;
+export const ACCELERATION = 0.0005;
+export const SPAWN_RATE_MIN = 100;
+export const SPAWN_RATE_MAX = 180;
+export const BIRD_RADIUS = 40;
+export const OBSTACLE_SIZE = 60;
+export const GROUND_HEIGHT = 120;

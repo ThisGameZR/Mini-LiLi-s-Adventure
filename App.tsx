@@ -1,134 +1,126 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { GameProvider, useGame } from './context/GameContext';
-import { Scene } from './types';
-import GooseCursor from './components/GooseCursor';
-import MenuScene from './scenes/MenuScene';
-import HubScene from './scenes/HubScene';
-import CatchGameScene from './scenes/CatchGameScene';
-import MazeGameScene from './scenes/MazeGameScene';
-import DuckKingdomScene from './scenes/DuckKingdomScene';
-import { playHonk } from './utils/audio';
+import React, { useState } from 'react';
+import { GameMode, ItemId, Item } from './types';
+import LiLi from './components/LiLi';
+import RunnerGame from './components/RunnerGame';
+import { Shop } from './components/Shop';
+import { StatsBar } from './components/StatsBar';
+import { ActionButtons } from './components/ActionButtons';
+import { PoopIndicator } from './components/PoopIndicator';
+import { ThoughtBubble } from './components/ThoughtBubble';
+import { ClickEffects } from './components/ClickEffects';
+import { useGameState } from './hooks/useGameState';
+import { useGameTick } from './hooks/useGameTick';
+import { useMood } from './hooks/useMood';
+import { useRandomChat } from './hooks/useRandomChat';
+import { handlePoke, handleSmartTime, handleFeed, handleBuyItem } from './utils/gameHandlers';
+import { ClickEffect } from './utils/clickEffects';
 
-const GameContainer = () => {
-  const { progress, currentScene, changeScene, unlockLevel, playSfx } = useGame();
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const [isCursorShocked, setIsCursorShocked] = useState(false);
-  const [cursorScale, setCursorScale] = useState(1);
-  const [cursorCooldown, setCursorCooldown] = useState(false);
-  const [isSpicy, setIsSpicy] = useState(false);
-  const [abilityTrigger, setAbilityTrigger] = useState(0);
-  const powerUpTimeoutRef = useRef<number | null>(null);
+export default function App() {
+  const [mode, setMode] = useState<GameMode>(GameMode.HOME);
+  const [geminiText, setGeminiText] = useState<string | null>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const [clickEffects, setClickEffects] = useState<ClickEffect[]>([]);
 
-  const handleLevelComplete = (scene: Scene, score: number, stars: number) => {
-    // Reset powerups on level exit
-    if (powerUpTimeoutRef.current) {
-      clearTimeout(powerUpTimeoutRef.current);
-    }
-    setCursorScale(1);
-    setIsSpicy(false);
-    
-    unlockLevel(scene, score, stars);
-    changeScene(Scene.HUB);
-    playSfx('win');
+  const {
+    gameState,
+    setGameState,
+    updateStats,
+    addPopcorn,
+    consumeItem,
+    unlockItem,
+    equipItem,
+    setHasPoop,
+  } = useGameState();
+
+  const mood = useMood({ gameState, geminiText });
+  
+  useGameTick({ mode, gameState, setGameState });
+  useRandomChat({ mode, mood, geminiText, setGeminiText });
+
+  const onPoke = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsInteracting(true);
+    setTimeout(() => setIsInteracting(false), 150);
+    handlePoke(e, mood, updateStats, clickEffects, setClickEffects);
   };
 
-  const triggerShock = () => {
-    setIsCursorShocked(true);
-    // Reset after animation duration (0.5s)
-    setTimeout(() => setIsCursorShocked(false), 500);
+  const onSmartTime = () => {
+    handleSmartTime(geminiText, setGeminiText);
   };
 
-  const activateSpicyMode = () => {
-    setIsSpicy(true);
-    if (powerUpTimeoutRef.current) clearTimeout(powerUpTimeoutRef.current);
-    powerUpTimeoutRef.current = window.setTimeout(() => {
-      setIsSpicy(false);
-    }, 5000); // 5 seconds of spicy
+  const onFeed = () => {
+    handleFeed(gameState, consumeItem, updateStats);
   };
 
-  const handleCursorClick = () => {
-    playHonk();
-    // Signal ability trigger to scenes that listen for it
-    setAbilityTrigger(Date.now());
+  const onCleanPoop = () => {
+    setHasPoop(false);
+    updateStats({ joy: 15 });
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (powerUpTimeoutRef.current) clearTimeout(powerUpTimeoutRef.current);
-    };
-  }, []);
-
-  const renderScene = () => {
-    switch (currentScene) {
-      case Scene.MENU:
-        return <MenuScene onChangeScene={changeScene} />;
-      case Scene.HUB:
-        return <HubScene progress={progress} onChangeScene={changeScene} />;
-      case Scene.GAME_CATCH:
-        return (
-          <CatchGameScene 
-            onGameOver={(score, stars) => handleLevelComplete(Scene.GAME_CATCH, score, stars)} 
-            onExit={() => {
-               if (powerUpTimeoutRef.current) clearTimeout(powerUpTimeoutRef.current);
-               setCursorScale(1);
-               setIsSpicy(false);
-               changeScene(Scene.HUB);
-            }}
-            cursorPos={cursorPos}
-            onCatchBadItem={triggerShock}
-            onSetCursorScale={setCursorScale}
-            onTriggerSpicy={activateSpicyMode}
-            isSpicy={isSpicy}
-          />
-        );
-      case Scene.GAME_MAZE:
-        return (
-           <MazeGameScene 
-             onGameOver={(score, stars) => handleLevelComplete(Scene.GAME_MAZE, score, stars)}
-             onExit={() => changeScene(Scene.HUB)}
-             cursorPos={cursorPos}
-             onCrash={triggerShock}
-           />
-        );
-      case Scene.GAME_DUCK_KINGDOM:
-        return (
-           <DuckKingdomScene
-             onGameOver={(score, stars) => handleLevelComplete(Scene.GAME_DUCK_KINGDOM, score, stars)}
-             onExit={() => changeScene(Scene.HUB)}
-             cursorPos={cursorPos}
-             onCrash={triggerShock}
-             abilityTrigger={abilityTrigger}
-             onCooldownChange={setCursorCooldown}
-           />
-        );
-      default:
-        return <MenuScene onChangeScene={changeScene} />;
-    }
+  const onBuyItem = (item: Item) => {
+    handleBuyItem(item, gameState, setGameState, unlockItem, equipItem);
   };
 
-  return (
-    <>
-      <GooseCursor 
-        onPositionChange={(x, y) => setCursorPos({ x, y })} 
-        onClick={handleCursorClick}
-        isShocked={isCursorShocked}
-        scale={cursorScale}
-        costume={currentScene === Scene.GAME_DUCK_KINGDOM ? 'tuxedo' : 'none'}
-        isCoolingDown={cursorCooldown}
-        isSpicy={isSpicy}
+  const onGameOver = (popcornEarned: number, eatenLasagna: boolean) => {
+    addPopcorn(popcornEarned);
+    updateStats({
+      tummy: eatenLasagna ? 100 : gameState.stats.tummy - 20,
+      energy: gameState.stats.energy - 30,
+    });
+    setMode(GameMode.HOME);
+  };
+
+  if (mode === GameMode.ADVENTURE) {
+    return (
+      <RunnerGame 
+        onGameOver={onGameOver} 
+        hasSuperJump={gameState.unlockedItems.includes(ItemId.RED_CAPE)}
+        hasSantaSuit={gameState.unlockedItems.includes(ItemId.SANTA_SUIT)}
       />
-      {renderScene()}
-    </>
-  );
-};
+    );
+  }
 
-const App = () => {
+  if (mode === GameMode.SHOP) {
+    return (
+      <Shop 
+        gameState={gameState}
+        onBuyItem={onBuyItem}
+        onClose={() => setMode(GameMode.HOME)}
+      />
+    );
+  }
+
+  // HOME MODE
   return (
-    <GameProvider>
-      <GameContainer />
-    </GameProvider>
-  );
-};
+    <div className="relative w-full h-full bg-lili-bg flex flex-col items-center justify-between pb-6 overflow-hidden">
+      {/* Top Bar */}
+      <StatsBar stats={gameState.stats} />
+      <div className="absolute top-20 right-4 bg-yellow-100 px-3 py-1 rounded-full border-2 border-yellow-300 font-bold text-yellow-800 shadow-sm">
+        🍿 {gameState.popcorn}
+      </div>
 
-export default App;
+      {/* Main Area */}
+      <div className="flex-1 flex flex-col items-center justify-center relative w-full">
+        {geminiText && <ThoughtBubble text={geminiText} />}
+        <ClickEffects effects={clickEffects} />
+
+        <LiLi 
+          mood={mood} 
+          equipped={gameState.equipped} 
+          isInteracting={isInteracting} 
+          onClick={onPoke}
+        />
+
+        {gameState.hasPoop && <PoopIndicator onClean={onCleanPoop} />}
+      </div>
+
+      <ActionButtons
+        onFeed={onFeed}
+        onSmartTime={onSmartTime}
+        onShop={() => setMode(GameMode.SHOP)}
+        onAdventure={() => setMode(GameMode.ADVENTURE)}
+        lasagnaCount={gameState.inventory[ItemId.LASAGNA] || 0}
+        isSmartTimeDisabled={!!geminiText}
+      />
+    </div>
+  );
+}

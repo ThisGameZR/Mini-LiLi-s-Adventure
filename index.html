@@ -2,34 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Mini LiLi's Adventure</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Hide default cursor globally as we use the Custom Goose Cursor */
-      body {
-        cursor: none;
-        overflow: hidden; /* Prevent scrolling during gameplay */
-        user-select: none;
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'lili-white': '#FFFDF5',
+              'lili-beak': '#FFAA00',
+              'lili-bg': '#E0F7FA',
+              'lili-red': '#FF4444',
+              'popcorn': '#FFD700',
+            },
+            animation: {
+              'bounce-slow': 'bounce 3s infinite',
+              'waddle': 'waddle 1s ease-in-out infinite',
+              'jiggle': 'jiggle 0.3s ease-in-out',
+            },
+            keyframes: {
+              waddle: {
+                '0%, 100%': { transform: 'rotate(-5deg)' },
+                '50%': { transform: 'rotate(5deg)' },
+              },
+              jiggle: {
+                '0%, 100%': { transform: 'scale(1, 1)' },
+                '25%': { transform: 'scale(1.1, 0.9)' },
+                '50%': { transform: 'scale(0.9, 1.1)' },
+                '75%': { transform: 'scale(1.05, 0.95)' },
+              }
+            }
+          },
+        },
       }
-      /* Custom utility for precise positioning */
-      .game-viewport {
-        touch-action: none;
+    </script>
+    <style>
+      /* Prevent pull-to-refresh on mobile */
+      body {
+        overscroll-behavior-y: contain;
+        touch-action: pan-x pan-y;
+        user-select: none;
+        -webkit-user-select: none;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       }
     </style>
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div id="root"></div>
+  <body class="bg-slate-900 text-slate-800 overflow-hidden">
+    <div id="root" class="h-screen w-screen flex flex-col items-center justify-center bg-gray-100"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
